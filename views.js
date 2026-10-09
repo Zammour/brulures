@@ -130,7 +130,7 @@ function renderEye(id, step) {
   const e = St.records.get(id); if (!e || e.deleted) return `<a class="back" href="#/yeux">‹ Yeux</a><div class="empty">Fiche introuvable.</div>`;
   step = STEPS.some(s => s[0] === step) ? step : firstOpenStep(e);
   const d = derive(e); const i = STEPS.findIndex(s => s[0] === step);
-  const body = ({ prep: stepPrep, base: stepMeasure, t5: stepMeasure, t30: stepMeasure, brulure: stepBrulure, rincage: stepRincage, fluo: stepFluo, histo: stepHisto, statut: stepStatut })[step](e, d, step);
+  const body = ({ prep: stepPrep, base: stepMeasure, t5: stepMeasure, t30: stepMeasure, brulure: stepBrulure, rincage: (e, d) => stepRincage(e, d) + kineticBlock(e), fluo: stepFluo, histo: stepHisto, statut: stepStatut })[step](e, d, step);
   return `<a class="back" href="#/yeux">‹ Yeux</a>
   <div class="eye-head"><span class="code">${esc(e.code)}</span>${gChip(e.groupe)}${e.phase === 'pilote' ? '<span class="badge">pilote</span>' : ''}${e.statut?.exclu ? '<span class="badge warn">exclu</span>' : ''}</div>
   <nav class="stepper" aria-label="Étapes">${STEPS.map(([k, l], j) => `<a href="#/oeil/${e.id}/${k}" class="${stepDone(e, k, d) ? 'done' : ''}" ${k === step ? 'aria-current="step"' : ''}><b>${stepDone(e, k, d) ? '✓' : j + 1}</b>${l}</a>`).join('')}</nav>
@@ -348,6 +348,7 @@ function renderReglages() {
       <button class="btn" data-act="exp" data-v="yeux">Tableau complet des yeux (1 ligne par œil)</button>
       <button class="btn" data-act="exp" data-v="prism">Critère principal, format Prism (1 colonne par groupe)</button>
       <button class="btn" data-act="exp" data-v="franz">Cellule de Franz (1 ligne par temps)</button>
+      <button class="btn" data-act="exp" data-v="cinetique">Cinétique du rinçage (1 ligne par prélèvement)</button>
       <button class="btn" data-act="exp" data-v="journal">Journal des modifications</button>
       <button class="btn" data-act="exp" data-v="json">Sauvegarde complète (JSON)</button>
       <label class="btn">Restaurer une sauvegarde (JSON)<input type="file" accept="application/json,.json" hidden data-import></label>
@@ -393,6 +394,7 @@ function renderReglages() {
     ${fText(c, 'rand.seed', 'Graine du tirage')}
     <p class="hint">Changer la composition ou la graine modifie la séquence des jours non encore commencés. Évitez de le faire en cours de journée.</p>
   </details>
+  ${kineticSettings()}
   <details data-k="d8" class="panel"><summary>Calcul d’effectif</summary>
     <div class="grid2">${cNum('puissance.delta', 'Différence visée', '%')}${cNum('puissance.sd', 'Écart-type supposé', '%')}</div>
     <div class="grid2">${cNum('puissance.alpha', 'Risque α')}${cNum('puissance.power', 'Puissance')}</div>

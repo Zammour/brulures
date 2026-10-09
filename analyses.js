@@ -142,6 +142,8 @@ function renderAnalyses() {
   <h3>Critères secondaires</h3>
   ${sec.map(([k, label, unit]) => { const b = by(k); const k3 = Stats.kruskal(['G1', 'G2', 'G3'].map(g => b[g].map(p => p.v))); return `<div class="panel"><b>${label}${unit ? ` (${unit})` : ''}</b>${dotPlot(b, { unit, id: k, dec: unit ? 0 : 2 })}${descTable(b, unit ? 0 : 2)}${k3 ? `<p class="hint">Kruskal-Wallis (G1–G3) : ${pTxt(k3.p)}</p>` : ''}</div>`; }).join('')}
 
+  ${kineticAnalyses(inc)}
+
   <h3>Cellule de Franz</h3>
   ${fz.length ? `<p class="hint">${fz.length} cellule(s).</p>${franzChart(fz, false)}
     <div class="tbl-wrap"><table><thead><tr><th>Temps</th><th>n</th><th>pH récepteur</th><th>pH donneur</th><th>Fluorescence</th></tr></thead><tbody>

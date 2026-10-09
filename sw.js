@@ -1,6 +1,6 @@
 /* Service worker : fonctionnement hors ligne. Changer VERSION à chaque mise à jour. */
-const VERSION = 'brulures-v1.0.1';
-const SHELL = ['./', 'index.html', 'stats.js', 'core.js', 'views.js', 'analyses.js', 'main.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
+const VERSION = 'brulures-v1.0.2';
+const SHELL = ['./', 'index.html', 'stats.js', 'core.js', 'views.js', 'analyses.js', 'cinetique.js', 'main.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION && k !== 'brulures-fonts').map(k => caches.delete(k)))).then(() => self.clients.claim()));

@@ -1,6 +1,6 @@
 /* Noyau : configuration, stockage local, enregistrement, fusion, calculs, randomisation, synchronisation. */
 'use strict';
-const APP_VERSION = '1.0.1';
+const APP_VERSION = '1.0.2';
 
 const GROUPS = ['G1', 'G2', 'G3', 'G4'];
 const TPS = [['base', 'Baseline'], ['t5', 'Post 5 min'], ['t30', 'Post 30 min']];
@@ -190,6 +190,7 @@ function newEye({ phase, dateExp, groupe, rand }) {
     },
     rincage: { phases: phases.map(p => ({ solution: p.solution, volume: p.volume, duree: p.duree })) },
     timeline: {}, mesures: { base: {}, t5: {}, t30: {} },
+    cinetique: { temps: (typeof kinConf === 'function' ? kinConf().temps.slice() : []), points: {} },
     fluo: { samples: {} }, histo: { prevu: false, etapes: {}, mesures: {} }, statut: { exclu: false }
   };
   // échantillons de fluorescence par défaut selon le groupe
@@ -338,6 +339,7 @@ function flatEye(e) {
     P(`${tp}_gris`, m.gris); P(`${tp}_gris_ref`, m.grisRef); P(`${tp}_gris_norm`, d[tp + '_grisNorm']); P(`${tp}_heure`, m.heure ? new Date(m.heure).toISOString() : '');
     P(`${tp}_photo`, m.photo?.url || (m.photo ? 'sur l’appareil' : ''));
   });
+  if (typeof kineticFlat === 'function') kineticFlat(e, P);
   P('delta_pachy_5_um', d.dPachy5); P('delta_pachy_30_um', d.dPachy30); P('delta_gris_5', d.dGris5); P('delta_gris_30', d.dGris30);
   Object.keys(SAMPLE_KINDS).forEach(kind => {
     const ss = sampleList(e).filter(s => s.kind === kind); const pre = 'fluo_' + kind;

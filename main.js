@@ -68,6 +68,8 @@ document.addEventListener('change', ev => {
   if (changed && m && !rec.mesures?.[m[1]]?.heure && v !== null && v !== '') setField(rec, `mesures.${m[1]}.heure`, Date.now());
   const fp = el.dataset.path.match(/^points\.(\d+)\./);
   if (changed && fp && rec.type === 'franz' && !rec.points?.[fp[1]]?.heure && v !== null) setField(rec, `points.${fp[1]}.heure`, Date.now());
+  const kp = el.dataset.path.match(/^cinetique\.points\.(\d+)\.(ph|vol)$/);
+  if (changed && kp && !rec.cinetique?.points?.[kp[1]]?.heure && v !== null) setField(rec, `cinetique.points.${kp[1]}.heure`, Date.now());
   if (rec.type === 'config' && el.dataset.path.startsWith('rand.')) toast('Randomisation modifiée');
   if (changed) render();
 });
@@ -82,15 +84,17 @@ function savePref(el) {
   if (el.dataset.pref === 'syncUrl' || el.dataset.pref === 'token') { St.sinceServer = 0; scheduleSync(500); }
   updateSyncUI();
 }
+/* « 0; 2,5; 5 » (virgule décimale) ou « 0, 15, 30 » (virgule + espace) */
+function splitNums(s) { return s.includes(';') ? s.split(';') : s.split(/,\s+|\s+|,(?=\d{2,})/); }
 function onActChange(el) {
   const act = el.dataset.actChange;
   if (act === 'ftemps') {
     const f = St.records.get(el.dataset.rec);
-    const t = el.value.split(/[;, ]+/).map(parseNum).filter(isNum).sort((a, b) => a - b);
+    const t = splitNums(el.value).map(parseNum).filter(isNum).sort((a, b) => a - b);
     if (t.length) setField(f, 'temps', [...new Set(t)]); render(true);
   }
   if (act === 'clist') { const v = el.value.split('\n').map(s => s.trim()).filter(Boolean); setField(cfg(), el.dataset.path, v); render(true); }
-  if (act === 'cnums') { const v = el.value.split(/[;, ]+/).map(parseNum).filter(isNum).sort((a, b) => a - b); if (v.length) setField(cfg(), el.dataset.path, v); render(true); }
+  if (act === 'cnums') { const v = splitNums(el.value).map(parseNum).filter(isNum).sort((a, b) => a - b); if (v.length) setField(cfg(), el.dataset.path, v); render(true); }
 }
 
 /* ---------- Actions ---------- */
@@ -266,6 +270,7 @@ function activeEvents(now = Date.now()) {
     if (!f.t0 || f.statut?.exclu) return;
     arr(f.temps).forEach(t => { const due = f.t0 + t * 60000; if (!f.points?.[t]?.heure && now < due + 30 * 60000 && t > 0) ev.push({ rec: f, key: f.id + 't' + t, label: `Franz t = ${t} min`, end: due, href: `#/franz/${f.id}` }); });
   });
+  if (typeof kineticEvents === 'function') kineticEvents(now, ev);
   return ev.sort((a, b) => a.end - b.end);
 }
 let lastDock = '';
@@ -289,7 +294,7 @@ function tick(force) {
     }
   });
   const dockEv = ev.filter(x => x.end - now < 31 * 60000);
-  const html = dockEv.map(x => `<a href="${x.href}" class="${x.end <= now ? 'due' : ''}"><b>${esc(x.rec.code)}</b><span>${esc(x.label)}</span><span class="cd">${mmss((x.end - now) / 1000)}</span></a>`).join('');
+  const html = dockEv.slice(0, 3).map(x => `<a href="${x.href}" class="${x.end <= now ? 'due' : ''}"><b>${esc(x.rec.code)}</b><span>${esc(x.label)}</span><span class="cd">${mmss((x.end - now) / 1000)}</span></a>`).join('') + (dockEv.length > 3 ? `<a href="${dockEv[3].href}"><span>+ ${dockEv.length - 3} autre(s) à venir</span></a>` : '');
   if (force || html !== lastDock) { $('#dock').innerHTML = html; lastDock = html; }
   wakeLock(dockEv.length > 0);
 }
@@ -341,6 +346,7 @@ function doExport(kind) {
     if (!rows.length) return toast('Aucun résultat de critère principal dans l’étude principale');
     download(`brulures_CEP_prism_${d}.csv`, toCSV(rows));
   }
+  if (kind === 'cinetique') download(`brulures_cinetique_${d}.csv`, toCSV(kineticExportRows()));
   if (kind === 'franz') download(`brulures_franz_${d}.csv`, toCSV(franzs().flatMap(flatFranzRows)));
   if (kind === 'journal') {
     const rows = [...St.records.values()].flatMap(r => (r.history || []).map(h => [['date', new Date(h.t).toISOString()], ['utilisateur', h.u], ['fiche', r.code || r.id], ['type', r.type], ['champ', h.p], ['avant', shortVal(h.o)], ['apres', shortVal(h.n)]])).sort((a, b) => a[0][1] < b[0][1] ? -1 : 1);
